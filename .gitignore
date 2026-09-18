@@ -1,0 +1,19 @@
+# Never commit Claude Science state or credentials
+.claude-science/
+UserProfile/
+ClaudeScience-D.exe
+
+# Python / Conda
+__pycache__/
+*.pyc
+.conda/
+conda/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Windows
+Thumbs.db
+Desktop.ini
