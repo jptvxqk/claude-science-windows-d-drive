@@ -43,14 +43,18 @@ The Claude Science program itself remains on C: and is small compared with the C
 - Conda package/environment hard links work when the environment is created directly on D:.
 - A fresh one-time local login URL can be generated with claude-science url.
 - The UI can be opened as a standalone Chrome app window.
+- After repairing a Windows sandbox ACL problem, the MCP Python environment could start Python (including numpy/pandas), R, and Node inside the sandbox.
+- In the recovered test state, all 20 bundled connectors reported READY.
+- A stale daemon can preserve an old failed-build state even after filesystem permissions have been repaired; a true daemon stop and fresh restart was required before connector setup retried successfully.
 
 ## Important limitations
 
 - This is unofficial and may stop working in future Claude Science releases.
-- Full long-duration Python/R/MCP workloads were not yet validated in this test because Claude Science requires a Pro or Max subscription for authorization.
+- The D-drive relocation and connector recovery were validated on the tested Windows setup, but this is not an Anthropic-supported installation mode.
 - Tray/taskbar behavior may differ from the default installation.
 - Pinning the custom launcher to the taskbar can produce two icons because the launcher and browser app window are different Windows applications.
-- A bundled MCP component named ketcher-chemistry showed a missing-module error in one test environment. That issue was separate from D-drive relocation and did not prevent the daemon from running.
+- A bundled MCP component named ketcher-chemistry showed a missing-module error during an earlier failed state; after the permission/restart recovery, bundled connector readiness returned to 20/20 in the tested setup.
+- Runtime updates may create a new runtime\<version> directory whose ACLs need to be re-checked if sandbox payloads start failing with 0xC0000022 (STATUS_ACCESS_DENIED).
 - Do not globally change USERPROFILE for Windows.
 
 ## Why not use a junction or symlink?
@@ -146,10 +150,13 @@ Seeing paths under both conda\pkgs and conda\envs indicates the same underlying 
     scripts/
       install-launcher.ps1
       verify-installation.ps1
+      restart-claude-science.ps1
+      repair-runtime-acl.ps1
       uninstall-launcher.ps1
 
     docs/
       troubleshooting.md
+      connector-environment-recovery.md
 
 ## Security note
 
