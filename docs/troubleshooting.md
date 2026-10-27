@@ -94,3 +94,65 @@ Expected:
 
     False
     True
+
+
+## Environment build fails with 0xC0000022 / STATUS_ACCESS_DENIED
+
+Observed symptom: Claude Science reported that one or more environments failed to build, and the Windows sandbox log included 0xC0000022 (STATUS_ACCESS_DENIED).
+
+In the tested setup, the failure was caused by sandbox access to runtime/environment files rather than by the D-drive relocation itself. After repairing the relevant ACL inheritance, sandbox launches for the MCP environment succeeded again.
+
+Important: after repairing permissions, the old Claude Science daemon may still keep the previous failed-build state. In one observed case, it had already failed repeatedly and stopped retrying, so the UI continued to show the old failure even though the filesystem permissions were fixed.
+
+Recommended recovery sequence:
+
+1. Close the Claude Science UI.
+2. Stop the daemon explicitly under the relocated profile.
+3. Re-check or repair ACL inheritance on the current runtime directory if the log still shows 0xC0000022.
+4. Start Claude Science again through the D-drive launcher.
+5. Re-open Settings / Environments or Connectors and allow the environment build to retry.
+
+To stop the relocated daemon:
+
+    $env:USERPROFILE = 'D:\ClaudeScience\UserProfile'
+    & "$env:LOCALAPPDATA\Programs\ClaudeScience\claude-science.com" stop
+
+Closing only the window or browser tab is not a full restart.
+
+## Old error remains visible after permissions were fixed
+
+If the UI still reports the same environment failure after an ACL repair, first check whether the daemon process is actually new.
+
+A stale background daemon can preserve a previous retry budget / failed-build state. In the recovered test, permissions were already correct and Python/R/Node could launch in the sandbox, but the old daemon had stopped retrying after repeated failures. Only a true stop followed by a fresh launch caused the connector environments to rebuild.
+
+Use:
+
+    $env:USERPROFILE = 'D:\ClaudeScience\UserProfile'
+    & "$env:LOCALAPPDATA\Programs\ClaudeScience\claude-science.com" stop
+
+Then start Claude Science again from the custom launcher.
+
+## Runtime update breaks sandbox access
+
+If Claude Science is updated and the problem returns, inspect the new:
+
+    D:\ClaudeScience\UserProfile\.claude-science\runtime\<version>
+
+directory.
+
+The tested recovery involved restoring permission inheritance on the new runtime tree. Because ACL changes are security-sensitive, back up the existing ACLs first. See scripts/repair-runtime-acl.ps1 and docs/connector-environment-recovery.md.
+
+## How to tell that connector recovery actually worked
+
+Do not rely only on the disappearance of a toast notification.
+
+Useful checks in the recovered test were:
+
+- the daemon was a fresh process;
+- sandbox execution of the MCP Python environment worked;
+- Python with numpy/pandas imported successfully;
+- R launched successfully;
+- Node launched successfully;
+- bundled connector status recovered to 20/20 READY.
+
+If only one of these passes, keep investigating instead of assuming the environment is fully repaired.
