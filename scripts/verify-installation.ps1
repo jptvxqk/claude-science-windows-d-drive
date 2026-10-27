@@ -35,3 +35,29 @@ if (Test-Path $dConda) {
         & fsutil hardlink list $py
     }
 }
+
+
+Write-Host ""
+Write-Host "Runtime directories:"
+$runtimeRoot = Join-Path $profile ".claude-science\runtime"
+if (Test-Path $runtimeRoot) {
+    Get-ChildItem $runtimeRoot -Directory |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object Name,LastWriteTime |
+        Format-Table -AutoSize
+}
+
+Write-Host ""
+Write-Host "Recent sandbox/access-denied log matches:"
+$logRoot = Join-Path $profile ".claude-science\logs"
+if (Test-Path $logRoot) {
+    $latestLog = Get-ChildItem $logRoot -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+
+    if ($latestLog) {
+        Select-String -Path $latestLog.FullName -Pattern "0xC0000022","STATUS_ACCESS_DENIED","MCP","READY" -SimpleMatch |
+            Select-Object -Last 30 |
+            ForEach-Object { $_.Line }
+    }
+}
